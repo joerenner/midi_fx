@@ -1,4 +1,4 @@
-from mido import Message, MidiFile, MidiTrack
+from mido import Message, MidiFile, MetaMessage, MidiTrack
 import mido
 import time
 
@@ -35,24 +35,30 @@ def record_midi():
         return chords
 
 # build midi track from list of chords
-def build_track(chords, duration=2, name=""):
-    print(chords)
+def build_track(chords, duration=8, name="", bpm=120):
+    ticks_per_beat = 480
+    duration = int(ticks_per_beat / (duration / 4))
     track = MidiTrack(name)
-    current_time = 0
+    track.append(MetaMessage('set_tempo', tempo=mido.bpm2tempo(bpm)))
+    track.append(MetaMessage('time_signature', numerator = 4, denominator = 4))
     for chord in chords:
-        for msg in chord:
-            print(current_time)
-            track.append(Message('note_on', note=msg.note, velocity=100, time=current_time))
-        current_time += duration
-        for msg in chord:
-            track.append(Message('note_off', note=msg.note, velocity=100, time=current_time))
+        for i in range(len(chord)):
+            track.append(Message('note_on', note=chord[i].note, velocity=100, time=0))
+        for i in range(len(chord)):
+            track.append(Message('note_off', note=chord[i].note, velocity=0, time=duration if i == 0 else 0))
+    track.append(MetaMessage('end_of_track'))
     return track
+
+def save_midi(tracks, file_name="test.mid"):
+    outfile = MidiFile()
+    for track in tracks:
+        outfile.tracks.append(track)
+    outfile.save(file_name)
 
 if __name__ == "__main__":
     mido.set_backend('mido.backends.pygame')
+    #test = MidiFile('test.mid')
     chords = record_midi()
-    track = build_track(chords)
-    for msg in track:
-        print(msg)
-    print(track)
+    track = build_track(chords, 1)
+    save_midi([track], "test2.mid")
 
