@@ -10,15 +10,41 @@ def note_duration_to_time_delta(duration):
     return int(ticks_per_beat / (duration / 4))
 
 
+def velocity_scale_chord(chord, min_vel, max_vel, num_notes):
+    new_chord = []
+    chord.sort(key=lambda x: x.note)
+    vel_delta = int((max_vel - min_vel) / (num_notes - 1))
+    for i in range(num_notes):
+        new_chord.append(chord[i].copy(velocity=min_vel+(i*vel_delta)))
+    return new_chord
+
+
 # input: track of quantinized chords
 # output: track of same chords, with higher notes having higher velocities
-def velocity_scaling(track):
-    return
+def velocity_scaling(track, min_vel=80, max_vel=127, single_vel=100):
+    new_track = MidiTrack(track.name)
+    chord = []
+    num_notes = 0
+    for msg in track:
+        if msg.type == "note_on":
+            chord.append(msg)
+            num_notes += 1
+        elif chord and msg.type == "note_off":
+            if num_notes == 1:
+                new_track.append(chord[0].copy(velocity=single_vel))
+            else:
+                [new_track.append(x) for x in velocity_scale_chord(chord, min_vel, max_vel, num_notes)]
+            chord = []
+            num_notes = 0
+            new_track.append(msg)
+        else:
+            new_track.append(msg)
+    return new_track
 
 
 # input: track of quantinized chords
 # output: track of glissando chords
-def glissando(track, delta=32):
+def glissando(track, delta=64):
     new_track = MidiTrack(track.name)
     delta = note_duration_to_time_delta(delta)
     bottom_note_on = True
@@ -33,7 +59,7 @@ def glissando(track, delta=32):
         elif not bottom_note_on and msg.type == "note_off":
             bottom_note_on = True
             new_time = msg.time - num_notes * delta
-            msg = msg.copy(time = new_time)
+            msg = msg.copy(time=new_time)
             num_notes = 0
         new_track.append(msg)
     return new_track
@@ -87,8 +113,9 @@ def save_midi(tracks, file_name="test.mid"):
 
 if __name__ == "__main__":
     mido.set_backend('mido.backends.pygame')
-    #test = MidiFile('test.mid')
+    # test = MidiFile('test2.mid')
     chords = record_midi_chords()
     track = build_track(chords, 1)
+    track = velocity_scaling(track)
     track = glissando(track)
     save_midi([track], "test2.mid")
