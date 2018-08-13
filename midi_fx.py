@@ -22,7 +22,7 @@ def velocity_scale_chord(chord, min_vel, max_vel, num_notes):
 # input: track of quantinized chords
 # output: track of same chords, with higher notes having higher velocities
 def velocity_scaling(track, min_vel=80, max_vel=127, single_vel=100):
-    new_track = MidiTrack(track.name)
+    new_track = MidiTrack()
     chord = []
     num_notes = 0
     for msg in track:
@@ -45,7 +45,7 @@ def velocity_scaling(track, min_vel=80, max_vel=127, single_vel=100):
 # input: track of quantinized chords
 # output: track of glissando chords
 def glissando(track, delta=64):
-    new_track = MidiTrack(track.name)
+    new_track = MidiTrack()
     delta = note_duration_to_time_delta(delta)
     bottom_note_on = True
     num_notes = 0
@@ -65,9 +65,28 @@ def glissando(track, delta=64):
     return new_track
 
 
+# input: track of quantinized chords
+# output: track of glissando chords
+def transpose(track, factor):
+    new_track = MidiTrack()
+    for msg in track:
+        if msg.type == "note_on" or msg.type == "note_off":
+            msg = msg.copy(note=msg.note+factor)
+        new_track.append(msg)
+    return new_track
+
+
+def transpose_octave_and_save(track, file_prefix):
+    for i in range(-6, 6):
+        if not i == 0:
+            save_midi([transpose(track, i)], file_prefix + str(i) + ".mid")
+        else:
+            save_midi([track], file_prefix + str(i) + ".mid")
+
+
 # records from input port
 # returns list of lists of midi messages, inner list correspond to messages that are chords
-def record_midi_chords():
+def record_midi_chords(chord_time=1.5, end_time=4.0):
     with mido.open_input() as port:
         last_time = time.time()
         current_chord = []
@@ -76,14 +95,14 @@ def record_midi_chords():
             if msg.type == "note_on" and msg.velocity == 80:
                 new_time = time.time()
                 delta = new_time - last_time
-                if delta > 1.5:
+                if delta > chord_time:
                     last_time = new_time
                     if current_chord:
                         chords.append(sorted(current_chord, key=lambda x: x.note))
                     current_chord = [msg]
                 else:
                     current_chord.append(msg)
-            if time.time() - last_time > 4.0:
+            if time.time() - last_time > end_time:
                 break
         if current_chord:
             chords.append(sorted(current_chord, key=lambda x: x.note))
@@ -113,9 +132,10 @@ def save_midi(tracks, file_name="test.mid"):
 
 if __name__ == "__main__":
     mido.set_backend('mido.backends.pygame')
-    # test = MidiFile('test2.mid')
+    # test = MidiFile('midi_files/african_flower3.mid')
+    chord_progression_name = ""
     chords = record_midi_chords()
-    track = build_track(chords, 1)
-    track = velocity_scaling(track)
-    track = glissando(track)
-    save_midi([track], "test2.mid")
+    track = build_track(chords, 2)
+    # track = velocity_scaling(track)
+    # track = glissando(track)
+    transpose_octave_and_save(track, "midi_files/"+chord_progression_name+"_")
