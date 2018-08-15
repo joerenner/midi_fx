@@ -130,14 +130,24 @@ def save_midi(tracks, file_name="test.mid"):
         outfile.tracks.append(track)
     outfile.save(file_name)
 
+
+def record_song(prefix_path, min_time_next_chord=0.5, end_time=6.0):
+    for i in range(1,4):
+        print("version {}".format(i))
+        chords = record_midi_chords(min_time_next_chord, end_time)
+        track = build_track(chords, 1)
+        transpose_octave_and_save(track, prefix_path + "{}_".format(i))
+
 if __name__ == "__main__":
     mido.set_backend('mido.backends.pygame')
     # test = MidiFile('midi_files/aguadebeber_samplehighs.mid')
-    chord_progression_name = "angleeyes3"
+    name = "armageddon"
+    record_song("midi_files/" + name)
+    """
     chords = record_midi_chords(0.5, 6.0)
     track = build_track(chords, 1)
-    # save_midi([track], "midi_files/" + chord_progression_name + ".mid")
-    # track = velocity_scaling(track)
-    # track = glissando(track,48)
-    # save_midi([track], chord_progression_name + ".mid")
-    transpose_octave_and_save(track, "midi_files/"+chord_progression_name+"_")
+    transpose_octave_and_save(track,  "midi_files/chords" + str(time.time()))
+    track = velocity_scaling(track)
+    track = glissando(track, 48)
+    save_midi([track], "chords.mid")
+"""
