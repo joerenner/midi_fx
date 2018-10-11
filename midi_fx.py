@@ -141,7 +141,7 @@ def record_song(prefix_path, min_time_next_chord=0.5, end_time=6.0):
 if __name__ == "__main__":
     mido.set_backend('mido.backends.pygame')
     # test = MidiFile('midi_files/aguadebeber_samplehighs.mid')
-    name = "armageddon"
+    name = "black_narcissus"
     record_song("midi_files/" + name)
     """
     chords = record_midi_chords(0.5, 6.0)
